@@ -1,2 +1,3 @@
 # Relay
-Geolocative, asymmetric multiplayer hacking game.
+
+_Relay_ is a work in progress geolocative asymmetric multiplayer hacking game.

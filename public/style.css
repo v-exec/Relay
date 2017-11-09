@@ -1,0 +1,58 @@
+* {
+	box-sizing: border-box;
+	color: #fff;
+	font-family: "Roboto Mono";
+	font-weight: 400;
+	font-size: 14px;
+}
+
+body {
+	background-color: #111;
+}
+
+#desc {
+	position: absolute;
+	width: 400px;
+	height: 200px;
+	left: calc(50vw - (400px/2));
+	top: calc(50vh - (320px));
+	line-height: normal;
+}
+
+#window {
+	position: absolute;
+	width: 300px;
+	height: 184px;
+	left: calc(50vw - (300px/2));
+	top: calc(50vh - (184px/2));
+	padding: 40px;
+	border: 1px solid #fff;
+}
+
+#login {
+	margin: 0;
+}
+
+.input {
+	width: 100%;
+	height: 22px;
+	background-color: #111;
+	font-family: "Roboto Mono";
+	border: none;
+	border-bottom: solid 1px #fff;
+	line-height: normal;
+	margin-bottom: 10px;
+}
+
+.input:focus {
+	outline: none;
+}
+
+#submit-origin,
+#submit-relay {
+	background-color: #111;
+	border: 1px solid #fff;
+	margin-top: 10px;
+	padding: 5px;
+	width: 50%;
+}

@@ -1,0 +1,24 @@
+<html>
+<head>
+	<title>RELAY</title>
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.css">
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500">
+	<link rel="stylesheet" type="text/css" href="mobile/style.css">
+</head>
+<body>
+	<div class="bar-item" id="top-item"><span id="relay">relay:</span></div>
+	<div class="bar-item"><span id="origin">origin:</span></div>
+	<div class="bar-item"><span id="session">_session</span></div>
+
+	<div id="windows">
+		<div id="action"></div>
+		<div id="hack"></div>
+		<div id="chat"></div>
+	</div>
+	
+	<div id="input"><span id="cli-symbol">></span><input type="text" id="cli" value="" onkeypress="cli(event)"></input></div>
+
+	<script src="../socket.io.min.js"></script>
+	<script src="mobile/mobile.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+/*GENERAL*/
+
+* {
+	box-sizing: border-box;
+	color: #fff;
+	font-family: "Roboto Mono";
+	font-weight: 400;
+}
+
+body {
+	background-color: #111;
+	padding: 20px;
+}
+
+/*TOP BAR*/
+
+#bar {
+	width: 100%;
+	height: 45px;
+	margin-bottom: 20px;
+}
+
+.bar-item {
+	display: inline-block;
+	background-color: #363636;
+	padding: 13px;
+	margin-right: 20px;
+	height: 45px;
+}
+
+/*WINDOWS*/
+
+#windows {
+	position: relative;
+	height: calc(100vh - ((20px + 45px + 20px) + (20px + 45px + 20px)));
+	width: 100%;
+	margin-bottom: 20px;
+}
+
+#left-windows {
+	display: inline-block;
+	position: relative;
+	width: calc(50% - 10px);
+	height: 100%;
+	margin-right: 20px;
+}
+
+#right-windows {
+	display: inline-block;
+	position: relative;
+	float: right;
+	clear: right;
+	right: 0px;
+	width: calc(50% - 10px);
+	height: 100%;
+}
+
+#hack,
+#action,
+#progress,
+#map,
+#chat {
+	display: inline-block;
+	width: 100%;
+	height: calc(50% - 10px);
+	border: solid 10px #363636;
+	background-color: #111;
+	padding: 15px;
+}
+
+#hack {
+	margin-bottom: 20px;
+}
+
+#action,
+#chat,
+#progress {
+	width: 100%;
+}
+
+#action {
+	vertical-align: top;
+	height: calc(35% - 10px);
+	margin-bottom: 20px;
+}
+
+#progress {
+	background-color: #363636;
+	height: calc(15% - 20px);
+	margin-bottom: 20px;
+}
+
+#chat {
+	height: calc(50% - 10px);
+}
+
+/*INPUT*/
+
+#input {
+	width: 100%;
+	height: 45px;
+	padding: 13px;
+	background-color: #363636;
+}
+
+#cli {
+	width: 90%;
+	font-family: "Roboto Mono";
+	line-height: normal;
+	background-color: #363636;
+	border: none;
+	font-size: 13px;
+}
+
+#cli:focus {
+	outline: none;
+}
+
+#cli-symbol {
+	font-size: 13px;
+	margin-right: 12px;
+}
+
+/*WINDOW CONTENTS*/

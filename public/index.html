@@ -1,0 +1,25 @@
+<html>
+<head>
+	<title>LOGIN</title>
+	<meta name="viewport" content="width=device-width, initial-scale=0.8">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.css">
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500">
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+	<span id="desc">
+		<i>RELAY</i> is a cooperative and competitive multiplayer, geolocation-based hacking game. A pair of players, consisting of an <i>ORIGIN</i> and a <i>RELAY</i> team up to find other <i>RELAYS</i> to hack.
+		<br><br>
+		If you're on your desktop and are ready to micromanage and hack, sign in as an <i>ORIGIN</i>. If you're on your phone and ready to run and pursue, sign in as a <i>RELAY</i>.
+	</span>
+	<div id="window">
+		<form id="login" method="post">
+			<input type="text" class="input" id="username" placeholder="username" name="username">
+			<input type="password" class="input" placeholder="password" name="password">
+			<input type="submit" id="submit-origin" name="login" value="origin"><input type="submit" id="submit-relay" name="login" value="relay">
+		</form>
+	</div>
+	<script src="socket.io.min.js"></script>
+	<script src="login.js"></script>
+</body>
+</html>
