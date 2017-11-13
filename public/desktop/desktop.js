@@ -1,5 +1,6 @@
 var socket = io();
 
+//input
 var cli = document.getElementById('cli');
 var inputBox = document.getElementById('cli-text');
 var queryFill = document.getElementById('query-fill');
@@ -7,7 +8,24 @@ var queryFill = document.getElementById('query-fill');
 var input;
 var oldInput;
 
+//bars
+var bar = document.getElementById('bar');
+var barOrigin = document.getElementById('bar-origin');
+var barRelay = document.getElementById('bar-relay');
+var barLocation = document.getElementById('bar-location');
+var barSession = document.getElementById('bar-session');
+
+//windows
+var chat = document.getElementById('chat');
+var action = document.getElementById('action');
+var progress = document.getElementById('progress');
+var hack = document.getElementById('hack');
+var map = document.getElementById('map');
+
+//states
 var isHacking = false;
+var isBeingHacked = false;
+var isNearRelay = false;
 var castingAction = false;
 var progressAction = false;
 var partner = null;
@@ -25,6 +43,10 @@ var nearFill = [
 "-hack"
 ];
 
+var hackedNearFill = [
+"-counterhack"
+];
+
 var playerNameFill = [
 "_relay name_"
 ];
@@ -36,11 +58,6 @@ var messageFill = [
 //get user
 var user = getCookie("relay-username");
 if (user == "") user = null;
-
-//get user info
-if (user) {
-	socket.emit('load profile data', user);
-}
 
 //on recieve profile data for UI
 socket.on('profile data', function(data) {
@@ -63,13 +80,23 @@ socket.on('disbanded', function(data) {
 });
 
 //on recieve chat message
-socket.on('chat', function(data) {
-	//ADD TO CHAT
+socket.on('chat message', function(data) {
+	addMessage(data.user, data.message, false);
+});
+
+//on getting hacked
+socket.on('hacked progress', function(data) {
+	//
+});
+
+//on hacking
+socket.on('hack progress', function(data) {
+	//
 });
 
 //on recieve error
 socket.on('err', function(data) {
-	inputBox.setAttribute('placeholder', data);
+	provideFeedback(data);
 });
 
 //input formatting
@@ -93,11 +120,11 @@ function handleInput(e) {
 			if (partner == null) {
 				var targetUser = input.substring(6, input.length).trim();
 				socket.emit('pair', {origin:user, relay:targetUser});
-			} else inputBox.setAttribute('placeholder', 'cannot pair with user, you are already paired');
+			} else provideFeedback('cannot pair with user, you are already paired');
 
 		} else if (input.toLowerCase().startsWith("-disband")) {
-			if (partner != null) socket.emit('disband', {origin:user, relay:partner});
-			else inputBox.setAttribute('placeholder', 'cannot disband, must be paired');
+			if (partner != null) socket.emit('disband', {user:user, relay:partner});
+			else provideFeedback('cannot disband, must be paired');
 			
 		} else if (input.toLowerCase().startsWith("-hack")) {
 			socket.emit('initiate hack', user);
@@ -106,24 +133,32 @@ function handleInput(e) {
 			if (partner != null) {
 				var message = input.trim();
 				socket.emit('chat', {user:user, message:message});
-			} else inputBox.setAttribute('placeholder', 'no relay to send message to, must be paired');
+				addMessage(user, message, true);
+			} else provideFeedback('no relay to send message to, must be paired');
 		}
 	}   
 }
 
+//get user info and arrange layout
 window.addEventListener("DOMContentLoaded", function () {
+	if (user) socket.emit('load profile data', {user:user, type:'origin'});
+
+	hack.style.display = 'none';
+	progress.style.display = 'none';
+	action.style.display = 'none';
+	chat.style.height = '100%';
+	map.style.height = '100%';
+
 	loop();
 });
 
-//persistent updates: cli suggestions and interface
+//persistent updates: cli suggestions, layout, dynamic interface
 function loop() {
+
+	//suggestions
 	input = inputBox.value;
-
 	resizeInput();
-
-	if (oldInput == input) {
-
-	} else {
+	if (oldInput != input) {
 		if (input == '' && partner == null) {
 			setQueryFill(aloneFill);
 		} else if (input == '' && partner != null) {
@@ -133,9 +168,17 @@ function loop() {
 		} else if (input == '-pair ') {
 			setQueryFill(playerNameFill);
 		} else queryFill.innerHTML = '';
-
 		oldInput = input;
 	}
+
+	//layout
+	var barsWidth = barOrigin.offsetWidth + barRelay.offsetWidth + barLocation.offsetWidth;
+	var totalWidth = bar.offsetWidth;
+
+	barSession.style.width = ((totalWidth - barsWidth) - (20 * 3) - 1) + 'px';
+
+	//interface
+	//
 
 	window.requestAnimationFrame(loop);
 }
@@ -157,6 +200,7 @@ function getCookie(cname) {
 	return "";
 }
 
+//resizes input to put query fills immediately next to input
 function resizeInput() {
 	var len;
 	if (input.length == 0) len = "50%";
@@ -164,10 +208,42 @@ function resizeInput() {
 	inputBox.style.width = len;
 }
 
+//sets query fills to array of strings
 function setQueryFill(fills) {
 	var text = fills[0];
 	for (var i = 1; i < fills.length; i++) {
 		text += ' ' + fills[i];
 	}
 	queryFill.innerHTML = text;
+}
+
+//adds message to chat
+function addMessage(user, message, isLocal) {
+	var container = document.createElement('div');
+	if (isLocal) container.className = 'message-local';
+	else container.className = 'message-foreign';
+
+	var u = document.createElement('span');
+	u.className = 'message-user';
+
+	var uText = document.createTextNode(user);
+	u.append(uText);
+
+	var m = document.createElement('span');
+	message.className = 'message-text';
+
+	var mText = document.createTextNode(message);
+	m.append(mText);
+
+	container.append(u);
+	container.append(m);
+
+	chat.append(container);
+
+	chat.scrollTop = chat.scrollHeight;
+}
+
+//sets placeholder attribute of input as feedback response
+function provideFeedback(message) {
+	inputBox.setAttribute('placeholder', message);
 }

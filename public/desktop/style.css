@@ -7,6 +7,10 @@
 	font-weight: 400;
 }
 
+*::-webkit-scrollbar { 
+    display: none; 
+}
+
 body {
 	background-color: #111;
 	padding: 20px;
@@ -26,6 +30,11 @@ body {
 	padding: 13px;
 	margin-right: 20px;
 	height: 45px;
+}
+
+#bar-session {
+	margin: 0;
+	text-align: right;
 }
 
 /*WINDOWS*/
@@ -92,6 +101,8 @@ body {
 
 #chat {
 	height: calc(50% - 10px);
+	margin-bottom: 0;
+	overflow: auto;
 }
 
 /*INPUT*/
@@ -141,3 +152,28 @@ body {
 }
 
 /*WINDOW CONTENTS*/
+
+.message-local,
+.message-foreign {
+	position: relative;
+	width: 100%;
+	margin-bottom: 20px;
+	font-size: 13px;
+}
+
+.message-local {
+	position: relative;
+	right: 0;
+	text-align: right;
+}
+
+.message-user {
+	display: block;
+	width: 100%;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+.message-text {
+	font-weight: 400;
+}

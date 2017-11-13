@@ -5,11 +5,15 @@
 	color: #fff;
 	font-family: "Roboto Mono";
 	font-weight: 400;
-	font-size: 38px;
+}
+
+*::-webkit-scrollbar { 
+    display: none; 
 }
 
 body {
 	background-color: #111;
+	font-size: 38px;
 }
 
 /*WINDOWS*/
@@ -53,18 +57,20 @@ body {
 
 #chat {
 	height: 30%;
+	overflow: auto;
+	margin-bottom: 0;
 }
 
 /*INPUT*/
 
-#input {
+#cli {
 	width: 100%;
 	height: 87px;
 	padding: 20px;
 	background-color: #111;
 }
 
-#cli {
+#cli-text {
 	width: 90%;
 	font-family: "Roboto Mono";
 	line-height: normal;
@@ -73,7 +79,7 @@ body {
 	font-size: 32px;
 }
 
-#cli:focus {
+#cli-text:focus {
 	outline: none;
 }
 
@@ -83,3 +89,28 @@ body {
 }
 
 /*WINDOW CONTENTS*/
+
+.message-local,
+.message-foreign {
+	position: relative;
+	width: 100%;
+	margin-bottom: 20px;
+	font-size: 32px;
+}
+
+.message-local {
+	position: relative;
+	right: 0;
+	text-align: right;
+}
+
+.message-user {
+	display: block;
+	width: 100%;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+.message-text {
+	font-weight: 400;
+}

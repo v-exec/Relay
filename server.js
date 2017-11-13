@@ -31,7 +31,8 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 //user-id pairs
-var users = [];
+var origins = [];
+var relays = [];
 
 //origin-relay pairs
 var originPairs = [];
@@ -56,8 +57,15 @@ app.post("/", function (req, res) {
 			userExists = true;
 
 			//check if user is online
-			for (var j = 0; j < users.length; j++) {
-				if (users[j].username == user.name) {
+			for (var j = 0; j < origins.length; j++) {
+				if (origins[j].username == user.name) {
+					res.sendFile(__dirname + '/public/index.html');
+					return;
+				}
+			}
+
+			for (var j = 0; j < relays.length; j++) {
+				if (relays[j].username == user.name) {
 					res.sendFile(__dirname + '/public/index.html');
 					return;
 				}
@@ -101,38 +109,51 @@ app.post("/", function (req, res) {
 io.on('connection', function(socket) {
 
 	//sends profile information to client when user signs in
-	socket.on('load profile data', function(username) {
+	socket.on('load profile data', function(data) {
 		var usersList = JSON.parse(fs.readFileSync('users.json', 'utf8'));
-		var targetUser;
 
 		//find user
 		for (var i = 0; i < usersList.length; i++) {
 			var user = usersList[i];
 
 			//send user data
-			if (user.name == username) {
-				targetUser = user;
-				users.push({id:socket.id, username:user.name});
-				socket.emit('profile data', targetUser);
+			if (user.name == data.user) {
+				if (data.type === 'origin') {
+					origins.push({id:socket.id, username:user.name});
+				} else if (data.type === 'relay') {
+					relays.push({id:socket.id, username:user.name});
+				}
+				
+				socket.emit('profile data', user);
 			}
 		}
 	});
 
 	//removes user from users array
 	socket.on('disconnect', function() {
-		for (var i = 0; i < users.length; i++) {
-			if (users[i].id == socket.id) {
-				users.splice(i, 1);
+
+		for (var i = 0; i < origins.length; i++) {
+			if (origins[i].id == socket.id) {
+				origins.splice(i, 1);
+				return;
 			}
 		}
+
+		for (var i = 0; i < relays.length; i++) {
+			if (relays[i].id == socket.id) {
+				relays.splice(i, 1);
+				return;
+			}
+		}
+
 	});
 
 	//associates 2 players (one origin, one relay)
 	socket.on('pair', function(data) {
-		for (var i = 0; i < users.length; i++) {
+		for (var i = 0; i < relays.length; i++) {
 
 			//find relay
-			if (users[i].username == data.relay) {
+			if (relays[i].username == data.relay) {
 
 				//check if relay is already paired
 				for (var j = 0; j < relayPairs.length; j++) {
@@ -145,18 +166,18 @@ io.on('connection', function(socket) {
 				//find origin
 				var originUser;
 
-				for (var j = 0; j < users.length; j++) {
-					if (users[j].username == data.origin) {
-						originUser = users[j];
+				for (var j = 0; j < origins.length; j++) {
+					if (origins[j].username == data.origin) {
+						originUser = origins[j];
 					}
 				}
 
 				//pair
 				originPairs.push(originUser);
-				relayPairs.push(users[i]);
+				relayPairs.push(relays[i]);
 
 				socket.emit('paired', data.relay);
-				socket.to(users[i].id).emit('paired', data.origin);
+				socket.to(relays[i].id).emit('paired', data.origin);
 				return;
 			}
 		}
@@ -168,13 +189,13 @@ io.on('connection', function(socket) {
 	//on disband, disassociate pair
 	socket.on('disband', function(data) {
 		for (var i = 0; i < originPairs.length; i++) {
-			if (originPairs[i].username == data.origin) {
+			if (originPairs[i].username == data.user) {
 				socket.emit('disbanded', relayPairs[i].id);
 				socket.to(relayPairs[i].id).emit('disbanded', originPairs[i].id);
 				originPairs.splice(i, 1);
 				relayPairs.splice(i, 1);
 				return;
-			} else if (relayPairs[i].username == data.origin) {
+			} else if (relayPairs[i].username == data.user) {
 				socket.to(originPairs[i].id).emit('disbanded', relayPairs[i].id);
 				socket.emit('disbanded', originPairs[i].id);
 				originPairs.splice(i, 1);
@@ -186,7 +207,15 @@ io.on('connection', function(socket) {
 
 	//on chat, send message to partner if they exist
 	socket.on('chat', function(data) {
-
+		for (var i = 0; i < originPairs.length; i++) {
+			if (originPairs[i].username == data.user) {
+				socket.to(relayPairs[i].id).emit('chat message', {user:data.user, message:data.message});
+				return;
+			} else if (relayPairs[i].username == data.user) {
+				socket.to(originPairs[i].id).emit('chat message', {user:data.user, message:data.message});
+				return;
+			}
+		}
 	});
 
 	//on hack initiation, find origin's relay, and then target other relay closest to them
