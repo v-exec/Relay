@@ -20,9 +20,11 @@
 		</div>
 	</div>
 	
-	<div id="input"><span id="cli-symbol">></span><input type="text" id="cli" value="" onkeypress="cli(event)"></input></div>
+	<div id="cli">
+		<span id="cli-symbol">></span><input type="text" id="cli-text" value="" onkeypress="handleInput(event)"></input><span id="query-fill" class="unselectable"></span>
+	</div>
 
 	<script src="../socket.io.min.js"></script>
-	<script src="desktop/desktop.js"></script>
+	<script src="../desktop/desktop.js"></script>
 </body>
 </html>
