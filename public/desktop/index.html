@@ -4,6 +4,8 @@
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.css">
 	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,600">
 	<link rel="stylesheet" type="text/css" href="desktop/style.css">
+	<script src='https://api.mapbox.com/mapbox-gl-js/v0.42.0/mapbox-gl.js'></script>
+	<link href='https://api.mapbox.com/mapbox-gl-js/v0.42.0/mapbox-gl.css' rel='stylesheet'/>
 </head>
 <body>
 	<div id="bar">
@@ -12,7 +14,7 @@
 
 	<div id="windows">
 		<div id="left-windows">
-			<div id="hack"></div><div id="map"></div>
+			<div id="hack"></div><div id="map"><div id="mapbox"></div></div>
 		</div>
 		
 		<div id="right-windows">
@@ -26,5 +28,6 @@
 
 	<script src="../socket.io.min.js"></script>
 	<script src="../desktop/desktop.js"></script>
+	<script src="../desktop/mapboxscript.js"></script>
 </body>
 </html>

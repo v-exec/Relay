@@ -148,6 +148,8 @@ window.addEventListener("DOMContentLoaded", function () {
 	action.style.display = 'none';
 	chat.style.height = '100%';
 	map.style.height = '100%';
+	mapbox.style.height = '100%';
+	mapbox.resize();
 
 	loop();
 });
