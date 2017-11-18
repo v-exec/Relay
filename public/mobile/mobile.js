@@ -6,6 +6,16 @@ var inputBox = document.getElementById('cli-text');
 
 var input;
 
+//location
+if ("geolocation" in navigator) {
+	var watchID = navigator.geolocation.watchPosition(function(position) {
+		var lat = position.coords.latitude;
+		var lon = position.coords.longitude;
+		//provideFeedback('lat:' + lat + ' lon:' + lon);
+		socket.emit('user location', {user:user, lat:lat, lon:lon});
+	});
+} else provideFeedback('Geolocation is not supported by this browser.');
+
 //windows
 var chat = document.getElementById('chat');
 var action = document.getElementById('action');
@@ -75,7 +85,7 @@ function handleInput(e) {
 		e.preventDefault();
 		inputBox.value = null;
 
-		inputBox.setAttribute('placeholder', '');
+		provideFeedback('');
 
 		if (input.toLowerCase().startsWith("-disband")) {
 			if (partner != null) socket.emit('disband', {user:user, relay:partner});

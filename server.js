@@ -218,6 +218,13 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//on receive location data from relay, broadcast to all origins
+	socket.on('user location', function(data) {
+		for (var i = 0; i < origins.length; i++) {
+			socket.to(origins[i].id).emit('location', {user:data.user, lat:data.lat, lon:data.lon});
+		}
+	});
+
 	//on hack initiation, find origin's relay, and then target other relay closest to them
 	socket.on('initiate hack', function(user) {
 

@@ -1,5 +1,13 @@
 var socket = io();
 
+mapboxgl.accessToken = 'pk.eyJ1IjoidmVreHMiLCJhIjoiY2phM2Z1ajlxMnF6ajJ3bDdrc3EyYXdvOCJ9.O9I8sJ8B-qG0XrPhM9ZkCw';
+
+var mapbox = new mapboxgl.Map({
+container: 'mapbox',
+style: 'mapbox://styles/vekxs/cja3h1tpx1o062sochn6tzjax',
+attributionControl: false
+});
+
 //input
 var cli = document.getElementById('cli');
 var inputBox = document.getElementById('cli-text');
@@ -92,6 +100,26 @@ socket.on('hacked progress', function(data) {
 //on hacking
 socket.on('hack progress', function(data) {
 	//
+});
+
+//on recieve location data
+socket.on('location', function(data) {
+
+	//create marker
+	var m = document.createElement('div');
+	m.className = 'marker';
+	m.setAttribute('user', data.user);
+
+	//check if other marker(s) for this user exist, and remove them before adding the new one
+	var markers = document.getElementsByClassName('marker');
+	for (var i = 0; i < markers.length; i++) {
+		if (markers[i].getAttribute('user') == data.user) markers[i].parentNode.removeChild(markers[i]);
+	}
+
+	//add new marker
+	new mapboxgl.Marker(m)
+	.setLngLat([data.lon, data.lat])
+	.addTo(mapbox);
 });
 
 //on recieve error
