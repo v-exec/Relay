@@ -6,16 +6,6 @@ var inputBox = document.getElementById('cli-text');
 
 var input;
 
-//location
-if ("geolocation" in navigator) {
-	var watchID = navigator.geolocation.watchPosition(function(position) {
-		var lat = position.coords.latitude;
-		var lon = position.coords.longitude;
-		//provideFeedback('lat:' + lat + ' lon:' + lon);
-		socket.emit('user location', {user:user, lat:lat, lon:lon});
-	});
-} else provideFeedback('Geolocation is not supported by this browser.');
-
 //windows
 var chat = document.getElementById('chat');
 var action = document.getElementById('action');
@@ -33,6 +23,16 @@ var partner = null;
 //get user
 var user = getCookie("relay-username");
 if (user == "") user = null;
+
+//location
+if ("geolocation" in navigator) {
+	var watchID = navigator.geolocation.watchPosition(function(position) {
+		var lat = position.coords.latitude;
+		var lon = position.coords.longitude;
+		//provideFeedback('lat:' + lat + ' lon:' + lon);
+		socket.emit('user location', {user:user, lat:lat, lon:lon});
+	});
+} else provideFeedback('Geolocation is not supported by this browser.');
 
 //on recieve profile data for UI
 socket.on('profile data', function(data) {
@@ -90,7 +90,6 @@ function handleInput(e) {
 		if (input.toLowerCase().startsWith("-disband")) {
 			if (partner != null) socket.emit('disband', {user:user, relay:partner});
 			else provideFeedback('cannot disband, must be paired');
-			
 		} else {
 			if (partner != null) {
 				var message = input.trim();

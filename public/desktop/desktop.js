@@ -193,8 +193,6 @@ function loop() {
 			setQueryFill(aloneFill);
 		} else if (input == '' && partner != null) {
 			setQueryFill(pairedFill);
-		} else if (input == '-c ') {
-			setQueryFill(messageFill);
 		} else if (input == '-pair ') {
 			setQueryFill(playerNameFill);
 		} else queryFill.innerHTML = '';
