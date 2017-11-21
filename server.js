@@ -352,6 +352,7 @@ io.on('connection', function(socket) {
 	});
 
 	//persistently emit progress ongoing hacks
+	//TODO: IS THIS AFFECTED BY NUMBER OF CONNECTED USERS?
 	setInterval(function() {
 		for (var i = 0; i < hacks.length; i++) {
 			if (hacks[i].progress == 0) {
@@ -360,11 +361,11 @@ io.on('connection', function(socket) {
 				originPairs[hacks[i].hackeeIndex].socket.emit('hack begin', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username});
 				relayPairs[hacks[i].hackeeIndex].socket.emit('hack begin', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username});
 				
-				hacks[i].progress += 1.0;
+				hacks[i].progress += 0.1;
 				hacks[i].progress = Math.round(hacks[i].progress * 10) / 10;
 
 			} else if (hacks[i].progress < 100) {
-				hacks[i].progress += 1.0;
+				hacks[i].progress += 0.1;
 				hacks[i].progress = Math.round(hacks[i].progress * 10) / 10;
 
 				if (getDistance(relayPairs[hacks[i].hackerIndex].lat, relayPairs[hacks[i].hackerIndex].lon, relayPairs[hacks[i].hackeeIndex].lat, relayPairs[hacks[i].hackeeIndex].lon) > 0.7) {
