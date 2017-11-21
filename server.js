@@ -122,9 +122,9 @@ io.on('connection', function(socket) {
 			//send user data
 			if (user.name === data.user) {
 				if (data.type === 'origin') {
-					origins.push({id:socket.id, username:user.name});
+					origins.push({socket:socket, id:socket.id, username:user.name});
 				} else if (data.type === 'relay') {
-					relays.push({id:socket.id, username:user.name, lat:0, lon:0});
+					relays.push({socket:socket, id:socket.id, username:user.name, lat:0, lon:0});
 				}
 				
 				socket.emit('profile data', user);
@@ -140,6 +140,28 @@ io.on('connection', function(socket) {
 		for (var i = 0; i < origins.length; i++) {
 			if (origins[i].id === socket.id) {
 				console.log(origins[i].username + ' has disconnected.');
+				for (var j = 0; j < originPairs.length; j++) {
+					if (originPairs[i]) {
+						if (originPairs[j].username === origins[i].username) {
+							socket.to(relayPairs[j].id).emit('disbanded', originPairs[j].id);
+
+							//cancel any ongoing hacks
+							for (var k = 0; k < hacks.length; k++) {
+								if (hacks[k].hackerIndex == j || hacks[k].hackeeIndex == j) {
+									if (originPairs[hacks[k].hackerIndex] && hacks[k].hackerIndex != j) socket.to(originPairs[hacks[k].hackerIndex].id).emit('hack cancel', '');
+									if (relayPairs[hacks[k].hackerIndex]) socket.to(relayPairs[hacks[k].hackerIndex].id).emit('hack cancel', '');
+									if (originPairs[hacks[k].hackeeIndex] && hacks[k].hackeeIndex != j) socket.to(originPairs[hacks[k].hackeeIndex].id).emit('hack cancel', '');
+									if (relayPairs[hacks[k].hackeeIndex]) socket.to(relayPairs[hacks[k].hackeeIndex].id).emit('hack cancel', '');
+									hacks.splice(k, 1);
+									break;
+								}
+							}
+							//disband group
+							originPairs[j] = null;
+							relayPairs[j] = null;
+						}
+					}
+				}
 				origins.splice(i, 1);
 				return;
 			}
@@ -148,18 +170,37 @@ io.on('connection', function(socket) {
 		for (var i = 0; i < relays.length; i++) {
 			if (relays[i].id === socket.id) {
 				console.log(relays[i].username + ' has disconnected.');
+				for (var j = 0; j < relayPairs.length; j++) {
+					if (relayPairs[i]) {
+						if (relayPairs[j].username === relays[i].username) {
+							socket.to(originPairs[j].id).emit('disbanded', relayPairs[j].id);
+
+							for (var k = 0; k < hacks.length; k++) {
+								if (hacks[k].hackerIndex == j || hacks[k].hackeeIndex == j) {
+									if (originPairs[hacks[k].hackerIndex]) socket.to(originPairs[hacks[k].hackerIndex].id).emit('hack cancel', '');
+									if (relayPairs[hacks[k].hackerIndex] && hacks[k].hackerIndex != j) socket.to(relayPairs[hacks[k].hackerIndex].id).emit('hack cancel', '');
+									if (originPairs[hacks[k].hackeeIndex]) socket.to(originPairs[hacks[k].hackeeIndex].id).emit('hack cancel', '');
+									if (relayPairs[hacks[k].hackeeIndex] && hacks[k].hackerIndex != j) socket.to(relayPairs[hacks[k].hackeeIndex].id).emit('hack cancel', '');
+									hacks.splice(k, 1);
+									break;
+								}
+							}
+							originPairs[j] = null;
+							relayPairs[j] = null;
+						}
+					}
+				}
 				relays.splice(i, 1);
 				return;
 			}
 		}
-
 	});
 
 	//on receive location data from relay, save location and broadcast to all origins
 	socket.on('user location', function(data) {
 		console.log('LOCATION');
 		for (var i = 0; i < relays.length; i++) {
-			if (relays[i].username = data.user) {
+			if (relays[i].username === data.user) {
 				relays[i].lat = data.lat;
 				relays[i].lon = data.lon;
 			}
@@ -180,9 +221,11 @@ io.on('connection', function(socket) {
 
 				//check if relay is already paired
 				for (var j = 0; j < relayPairs.length; j++) {
-					if (relayPairs[j].username === data.relay) {
-						socket.emit('err', 'user is already paired');
-						return;
+					if (relayPairs[j]) {
+						if (relayPairs[j].username === data.relay) {
+							socket.emit('err', 'user is already paired');
+							return;
+						}
 					}
 				}
 
@@ -213,18 +256,24 @@ io.on('connection', function(socket) {
 	socket.on('disband', function(data) {
 		console.log('DISBAND');
 		for (var i = 0; i < originPairs.length; i++) {
-			if (originPairs[i].username === data.user) {
-				socket.emit('disbanded', relayPairs[i].id);
-				socket.to(relayPairs[i].id).emit('disbanded', originPairs[i].id);
-				originPairs.splice(i, 1);
-				relayPairs.splice(i, 1);
-				return;
-			} else if (relayPairs[i].username === data.user) {
-				socket.to(originPairs[i].id).emit('disbanded', relayPairs[i].id);
-				socket.emit('disbanded', originPairs[i].id);
-				originPairs.splice(i, 1);
-				relayPairs.splice(i, 1);
-				return;
+			if (originPairs[i]) {
+				if (originPairs[i].username === data.user) {
+					socket.emit('disbanded', relayPairs[i].id);
+					socket.to(relayPairs[i].id).emit('disbanded', originPairs[i].id);
+					originPairs[i] = null;
+					relayPairs[i] = null;
+					return;
+				}
+			}
+			
+			if (relayPairs[i]) {
+				if (relayPairs[i].username === data.user) {
+					socket.emit('disbanded', originPairs[i].id);
+					socket.to(originPairs[i].id).emit('disbanded', relayPairs[i].id);
+					originPairs[i] = null;
+					relayPairs[i] = null;
+					return;
+				}
 			}
 		}
 	});
@@ -233,12 +282,18 @@ io.on('connection', function(socket) {
 	socket.on('chat', function(data) {
 		console.log('CHAT');
 		for (var i = 0; i < originPairs.length; i++) {
-			if (originPairs[i].username === data.user) {
-				socket.to(relayPairs[i].id).emit('chat message', {user:data.user, message:data.message});
-				return;
-			} else if (relayPairs[i].username === data.user) {
-				socket.to(originPairs[i].id).emit('chat message', {user:data.user, message:data.message});
-				return;
+			if (originPairs[i]) {
+				if (originPairs[i].username === data.user) {
+					socket.to(relayPairs[i].id).emit('chat message', {user:data.user, message:data.message});
+					return;
+				}
+			}
+
+			if (relayPairs[i]) {
+				if (relayPairs[i].username === data.user) {
+					socket.to(originPairs[i].id).emit('chat message', {user:data.user, message:data.message});
+					return;
+				}
 			}
 		}
 	});
@@ -247,13 +302,19 @@ io.on('connection', function(socket) {
 	socket.on('initiate hack', function(user) {
 		console.log('INITIATE HACK');
 		for (var i = 0; i < originPairs.length; i++) {
-			if (originPairs[i].username === user) {
-				for (var j = 0; j < relayPairs.length; j++) {
-					if (relayPairs[i] != relayPairs[j]) {
+			if (originPairs[i]) {
+				if (originPairs[i].username === user) {
+					for (var j = 0; j < relayPairs.length; j++) {
+						if (relayPairs[j]) {
+							if (relayPairs[i] != relayPairs[j]) {
 
-						//if distance between origin's relay and target is less than 0.1km, begin hack
-						if(getDistance(relayPairs[i].lat, relayPairs[i].lon, relayPairs[j].lat, relayPairs[j].lon) < 0.1) {
-							hacks.push({hackerIndex:i, hackeeIndex:j, progress: 0.0});
+								//if distance between origin's relay and first found target is less than 0.1km, begin hack
+								//TODO: SHOULD BE CHANGED TO FINDING ALL RELAYS' DISTANCE AND CHOOSING CLOSEST
+								if(getDistance(relayPairs[i].lat, relayPairs[i].lon, relayPairs[j].lat, relayPairs[j].lon) < 0.1) {
+									hacks.push({hackerIndex:i, hackeeIndex:j, progress: 0});
+									return;
+								}
+							}
 						}
 					}
 				}
@@ -264,34 +325,71 @@ io.on('connection', function(socket) {
 		socket.emit('err', 'could not find target near enough to relay');
 	});
 
+	//on counter ack, check if origin's relay is in hack and close enough to the hacker relay, and if so, terminate hack
+	//TODO: NOT TESTED YET
+	socket.on('counterhack', function(user) {
+		for (var i = 0; i < originPairs.length; i++) {
+			if (originPairs[i]) {
+				if (originPairs[i].username === user) {
+					for (var j = 0; j < hacks.length; j++) {
+						if (hacks[j].hackeeIndex == i) {
+							if (getDistance(relayPairs[hacks[j].hackeeIndex].lat, relayPairs[hacks[j].hackeeIndex].lon, relayPairs[hacks[j].hackerIndex].lat, relayPairs[hacks[j].hackerIndex].lon) < 0.04) {
+								originPairs[hacks[j].hackerIndex].socket.emit('hack failure', {progress:hacks[j].progress, role: 'hacker', targetOrigin: originPairs[hacks[j].hackeeIndex].username, targetRelay: relayPairs[hacks[j].hackeeIndex].username, reason: 'counter'});
+								relayPairs[hacks[j].hackerIndex].socket.emit('hack failure', {progress:hacks[j].progress, role: 'hacker', targetOrigin: originPairs[hacks[j].hackeeIndex].username, targetRelay: relayPairs[hacks[j].hackeeIndex].username, reason: 'counter'});
+								originPairs[hacks[j].hackeeIndex].socket.emit('hack success', {progress:hacks[j].progress, role: 'target', hackerOrigin: originPairs[hacks[j].hackerIndex].username, hackerRelay: relayPairs[hacks[j].hackerIndex].username, reason: 'counter'});
+								relayPairs[hacks[j].hackeeIndex].socket.emit('hack success', {progress:hacks[j].progress, role: 'target', hackerOrigin: originPairs[hacks[j].hackerIndex].username, hackerRelay: relayPairs[hacks[j].hackerIndex].username, reason: 'counter'});
+								hacks.splice(j, 1);
+								return;
+							} else {
+								socket.emit('err', 'hacker relay is too far');
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	});
+
 	//persistently emit progress ongoing hacks
 	setInterval(function() {
 		for (var i = 0; i < hacks.length; i++) {
 			if (hacks[i].progress == 0) {
-				socket.to(originPairs[hacks.hackerIndex].id).emit('hacking begin', hacks[i].progress);
-				socket.to(relayPairs[hacks.hackerIndex].id).emit('hacking begin', hacks[i].progress);
-				socket.to(originPairs[hacks.hackeeIndex].id).emit('hacked begin', hacks[i].progress);
-				socket.to(relayPairs[hacks.hackeeIndex].id).emit('hacked begin', hacks[i].progress);
+				originPairs[hacks[i].hackerIndex].socket.emit('hack begin', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username});
+				relayPairs[hacks[i].hackerIndex].socket.emit('hack begin', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username});
+				originPairs[hacks[i].hackeeIndex].socket.emit('hack begin', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username});
+				relayPairs[hacks[i].hackeeIndex].socket.emit('hack begin', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username});
+				
+				hacks[i].progress += 1.0;
+				hacks[i].progress = Math.round(hacks[i].progress * 10) / 10;
+
 			} else if (hacks[i].progress < 100) {
-				hacks[i].progress += 0.1;
-				socket.to(originPairs[hacks.hackerIndex].id).emit('hacking progress', hacks[i].progress);
-				socket.to(relayPairs[hacks.hackerIndex].id).emit('hacking progress', hacks[i].progress);
-				socket.to(originPairs[hacks.hackeeIndex].id).emit('hacked progress', hacks[i].progress);
-				socket.to(relayPairs[hacks.hackeeIndex].id).emit('hacked progress', hacks[i].progress);
+				hacks[i].progress += 1.0;
+				hacks[i].progress = Math.round(hacks[i].progress * 10) / 10;
+
+				if (getDistance(relayPairs[hacks[i].hackerIndex].lat, relayPairs[hacks[i].hackerIndex].lon, relayPairs[hacks[i].hackeeIndex].lat, relayPairs[hacks[i].hackeeIndex].lon) > 0.7) {
+					originPairs[hacks[i].hackerIndex].socket.emit('hack failure', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username, reason: 'escape'});
+					relayPairs[hacks[i].hackerIndex].socket.emit('hack failure', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username, reason: 'escape'});
+					originPairs[hacks[i].hackeeIndex].socket.emit('hack success', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username, reason: 'escape'});
+					relayPairs[hacks[i].hackeeIndex].socket.emit('hack success', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username, reason: 'escape'});
+					hacks.splice(i, 1);
+				} else {
+					originPairs[hacks[i].hackerIndex].socket.emit('hack progress', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username});
+					relayPairs[hacks[i].hackerIndex].socket.emit('hack progress', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username});
+					originPairs[hacks[i].hackeeIndex].socket.emit('hack progress', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username});
+					relayPairs[hacks[i].hackeeIndex].socket.emit('hack progress', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username});
+				}
+				
 			} else {
-				socket.to(originPairs[hacks.hackerIndex].id).emit('hack success', hacks[i].progress);
-				socket.to(relayPairs[hacks.hackerIndex].id).emit('hack success', hacks[i].progress);
-				socket.to(originPairs[hacks.hackeeIndex].id).emit('hacked failure', hacks[i].progress);
-				socket.to(relayPairs[hacks.hackeeIndex].id).emit('hacked failure', hacks[i].progress);
-				hacks[i].splice(i, 1);
+				originPairs[hacks[i].hackerIndex].socket.emit('hack success', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username, reason: 'hack'});
+				relayPairs[hacks[i].hackerIndex].socket.emit('hack success', {progress:hacks[i].progress, role: 'hacker', targetOrigin: originPairs[hacks[i].hackeeIndex].username, targetRelay: relayPairs[hacks[i].hackeeIndex].username, reason: 'hack'});
+				originPairs[hacks[i].hackeeIndex].socket.emit('hack failure', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username, reason: 'hack'});
+				relayPairs[hacks[i].hackeeIndex].socket.emit('hack failure', {progress:hacks[i].progress, role: 'target', hackerOrigin: originPairs[hacks[i].hackerIndex].username, hackerRelay: relayPairs[hacks[i].hackerIndex].username, reason: 'hack'});
+				hacks.splice(i, 1);
 			}
 		}
 	}, 1000);
 });
-
-setInterval(function() {
-	printPlayers();
-}, 1000);
 
 //gets distance between two coordinates on globe, in km
 function getDistance(lat1,lon1,lat2,lon2) {
@@ -316,34 +414,41 @@ function deg2rad(deg) {
 	return deg * (Math.PI/180);
 }
 
+//limits decimal numbers
+function roundedToFixed(num, digits){
+	var rounder = Math.pow(10, digits);
+	return (Math.round(num * rounder) / rounder).toFixed(digits);
+}
+
 //debugging
 function printPlayers() {
 	console.log("");
 	console.log("/////////////////////// USERS ///////////////////////");
 	console.log("");
 
-	console.log("relays: " + relays.length);
 	for (var i = 0; i < relays.length; i++) {
 		console.log("relay " + i + ": " + relays[i].username);
 	}
 
 	console.log("");
 
-	console.log("origins: " + origins.length);
 	for (var i = 0; i < origins.length; i++) {
 		console.log("origin " + i + ": " + origins[i].username);
 	}
 
 	console.log("");
 
-	console.log("origin pairs: " + originPairs.length);
-	console.log("relay pairs: " + relayPairs.length);
 	for (var i = 0; i < originPairs.length; i++) {
-		console.log("origin pair " + i + ": " + originPairs[i].username);
-		console.log("relay pair " + i + ": " + relayPairs[i].username);
+		if (originPairs[i]) {
+			console.log("origin pair " + i + ": " + originPairs[i].username);
+		}
+		
+		if (relayPairs[i]) {
+			console.log("relay pair " + i + ": " + relayPairs[i].username);
+		}
 	}
-
-	console.log("");
-	console.log("///////////////////////  ///////////////////////");
-	console.log("");
 }
+
+setInterval(function() {
+	printPlayers();
+}, 1000);

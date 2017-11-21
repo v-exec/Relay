@@ -114,3 +114,19 @@ body {
 .message-text {
 	font-weight: 400;
 }
+
+#hack-visual {
+	width: 100%;
+	height: 70%;
+	margin-top: 60px;
+}
+
+#hack-name,
+#hack-progress {
+	font-size: 28px;
+}
+
+#hack-progress {
+	float: right;
+	clear: right;
+}

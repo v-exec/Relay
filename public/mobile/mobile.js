@@ -11,14 +11,18 @@ var chat = document.getElementById('chat');
 var action = document.getElementById('action');
 var progress = document.getElementById('progress');
 var hack = document.getElementById('hack');
+var session = document.getElementById('session');
+var topItem = document.getElementById('top-item');
+
+//hack data
+var hackName = document.getElementById('hack-name');
+var hackProgress = document.getElementById('hack-progress');
+var hackVisual = document.getElementById('hack-visual');
 
 //states
-var isHacking = false;
-var isBeingHacked = false;
-var isNearRelay = false;
-var castingAction = false;
-var progressAction = false;
 var partner = null;
+var target = null;
+var hacker = null;
 
 //get user
 var user = getCookie("relay-username");
@@ -29,7 +33,6 @@ if ("geolocation" in navigator) {
 	var watchID = navigator.geolocation.watchPosition(function(position) {
 		var lat = position.coords.latitude;
 		var lon = position.coords.longitude;
-		//provideFeedback('lat:' + lat + ' lon:' + lon);
 		socket.emit('user location', {user:user, lat:lat, lon:lon});
 	});
 } else provideFeedback('Geolocation is not supported by this browser.');
@@ -38,6 +41,7 @@ if ("geolocation" in navigator) {
 socket.on('profile data', function(data) {
 	var originName = document.getElementById('relay');
 	originName.innerHTML = 'relay: ' + data.name;
+	session.innerHTML = 'public_session';
 });
 
 //on successful pair
@@ -59,14 +63,110 @@ socket.on('chat message', function(data) {
 	addMessage(data.user, data.message, false);
 });
 
-//on getting hacked
-socket.on('hacked progress', function(data) {
-	//
+//on hack begin
+socket.on('hack begin', function(data) {
+	//resize layout
+	hack.style.display = 'block';
+	chat.style.height = '50%';
+
+	//change UI text and get target/hacker
+	if (data.role === 'hacker') {
+		session.innerHTML = 'hacking_session';
+		hacker = null;
+		target = data.targetRelay;
+		hackName.style.color = '#fff';
+		hackProgress.style.color = '#fff';
+		topItem.style.backgroundColor = '#fff';
+		hackName.innerHTML = 'Hacking ' + data.targetOrigin + ' and ' + data.targetRelay + '.';
+	} else if (data.role === 'target') {
+		session.innerHTML = 'targeted_session';
+		target = null;
+		hacker = data.hackerRelay;
+		hackName.style.color = '#ff0000';
+		hackProgress.style.color = '#ff0000';
+		topItem.style.backgroundColor = '#ff0000';
+		hackName.innerHTML = 'Getting hacked by ' + data.hackerOrigin + ' and ' + data.hackerRelay + '.';
+	}
+
+	hackProgress.innerHTML = data.progress + '%';
 });
 
-//on hacking
+//on hack progress
 socket.on('hack progress', function(data) {
-	//
+	hackProgress.innerHTML = data.progress + '%';
+
+	var angle = map(data.progress, 0, 100, 0, Math.PI * 2);
+
+	while (hackVisual.hasChildNodes()) {
+		hackVisual.removeChild(hackVisual.lastChild);
+	}
+
+	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	svg.setAttribute('width', '100%');
+	svg.setAttribute('height', '100%');
+	svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+	var arcPath = createSvgArc(0, 0, 150, 0, angle);
+	var color;
+	if (data.role === 'hacker') color = '#fff';
+	else if (data.role === 'target') color = '#ff0000';
+
+	var xCenter = parseInt(hackVisual.offsetWidth) / 2;
+	var yCenter = parseInt(hackVisual.offsetHeight) / 2;
+
+	svg.innerHTML = '<svg x="' + (xCenter - 150) + 'px" y="' + (yCenter - 150) + 'px" width="300px" height="300px" viewBox="0 0 300 300"><g transform="translate(150 150) rotate(-90) scale(1 -1)"><path d="' + arcPath + '" fill="' + color + '"/></g></svg><circle cx="50%" cy="50%" r="110" fill="#111"/>';
+
+	hackVisual.append(svg);
+});
+
+//on hack success
+socket.on('hack success', function(data) {
+	hackProgress.innerHTML = data.progress + '%';
+	if (data.reason === 'hack') hackName.innerHTML = 'Successfully hacked ' + data.targetOrigin + ' and ' + data.targetRelay + '.';
+	else if (data.reason === 'escape') hackName.innerHTML = 'Successfully escaped ' + data.targetOrigin + ' and ' + data.targetRelay + '.';
+	else if (data.reason === 'counter') hackName.innerHTML = 'Successfully counter-hacked ' + data.hackerOrigin + ' and ' + data.hackerRelay + '.';
+	
+	target = null;
+	hacker = null;
+
+	setTimeout(function() {
+		session.innerHTML = 'public_session';
+		chat.style.height = '100%';
+		hack.style.display = 'none';
+		topItem.style.backgroundColor = '#fff';
+	}, 5000);
+});
+
+//on hack failure
+socket.on('hack failure', function(data) {
+	hackProgress.innerHTML = data.progress + '%';
+	if (data.reason === 'hack') hackName.innerHTML = 'Failure. Successfully hacked by ' + data.hackerOrigin + ' and ' + data.hackerRelay + '.';
+	else if (data.reason === 'escape') hackName.innerHTML = 'Hack failed. ' + data.targetOrigin + ' and ' + data.targetRelay + ' have escaped.';
+	else if (data.reason === 'counter') hackName.innerHTML = 'Hack failed. Successfully counter-hacked by ' + data.targetOrigin + ' and ' + data.targetRelay + '.';
+	
+	target = null;
+	hacker = null;
+
+	setTimeout(function() {
+		session.innerHTML = 'public_session';
+		chat.style.height = '100%';
+		hack.style.display = 'none';
+		topItem.style.backgroundColor = '#fff';
+	}, 5000);
+});
+
+//on hack cancel
+socket.on('hack cancel', function(data) {
+	hackName.innerHTML = 'Hack was cancelled due to connection issue.';
+	target = null;
+	hacker = null;
+
+	setTimeout(function() {
+		session.innerHTML = 'public_session';
+		chat.style.height = '100%';
+		hack.style.display = 'none';
+		topItem.style.backgroundColor = '#fff';
+	}, 5000);
 });
 
 //on recieve error
@@ -114,10 +214,6 @@ window.addEventListener("DOMContentLoaded", function () {
 //persistent updates: layout, dynamic interface
 function loop() {
 	input = inputBox.value;
-
-	//interface
-	//
-
 	window.requestAnimationFrame(loop);
 }
 
@@ -167,4 +263,32 @@ function addMessage(user, message, isLocal) {
 //sets placeholder attribute of input as feedback response
 function provideFeedback(message) {
 	inputBox.setAttribute('placeholder', message);
+}
+
+//creates arc using SVG
+function createSvgArc(x, y, r, startAngle, endAngle) {
+	if(startAngle > endAngle){
+		var s = startAngle;
+		startAngle = endAngle;
+		endAngle = s;
+	}
+
+	if (endAngle - startAngle > Math.PI*2) endAngle = Math.PI*1.99999;
+
+	if (endAngle - startAngle <= Math.PI) largeArc = 0;
+	else largeArc = 1;
+
+	var arc = [
+		'M', x, y,
+		'L', x + (Math.cos(startAngle) * r), y - (Math.sin(startAngle) * r), 
+		'A', r, r, 0, largeArc, 0, x + (Math.cos(endAngle) * r), y - (Math.sin(endAngle) * r),
+		'L', x, y
+	];
+
+	return arc.join(' ');
+}
+
+//linear map
+function map(value, low1, high1, low2, high2) {
+    return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
 }
