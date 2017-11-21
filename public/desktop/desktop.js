@@ -233,7 +233,7 @@ socket.on('location', function(data) {
 			var json = JSON.parse(text);
 			barLocation.innerHTML = json.features[2].place_name;
 		});
-	} else if (data.user === target) {
+	} else if (data.user === target || data.user === hacker) {
 		m.className = 'target-marker';
 	} else {
 		m.className = 'marker';
